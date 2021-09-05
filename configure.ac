@@ -483,27 +483,18 @@ AC_ARG_WITH(default-fonts,
 			[Use fonts from DIR1,DIR2,... when config is busted])],
 	default_fonts="$withval", default_fonts=yes)
 
+FC_DEFAULT_FONTS=""
 case "$default_fonts" in
 yes)
 	if test "$os_win32" = "yes"; then
-		default_fonts="WINDOWSFONTDIR"
+		FC_DEFAULT_FONTS="WINDOWSFONTDIR"
 	elif test "$os_darwin" = "yes"; then
-		default_fonts="/System/Library/Fonts,/Library/Fonts,~/Library/Fonts,/System/Library/Assets/com_apple_MobileAsset_Font3,/System/Library/Assets/com_apple_MobileAsset_Font4"
+		FC_DEFAULT_FONTS="\t<dir>/System/Library/Fonts</dir>\n\t<dir>/Library/Fonts</dir>\n\t<dir>~/Library/Fonts</dir>\n\t<dir>/System/Library/Assets/com_apple_MobileAsset_Font3</dir>\n\t<dir>/System/Library/Assets/com_apple_MobileAsset_Font4</dir>\n"
 	else
-		default_fonts="/usr/share/fonts"
+		FC_DEFAULT_FONTS="\t<dir>/usr/share/fonts</dir>\n"
 	fi
 	;;
 esac
-
-FC_DEFAULT_FONTS=""
-if test x${default_fonts+set} = xset; then
-	fc_IFS=$IFS
-	IFS=","
-	for p in "$default_fonts"; do
-		FC_DEFAULT_FONTS="$FC_DEFAULT_FONTS\t<dir>$p</dir>\n"
-	done
-	IFS=$fc_IFS
-fi
 
 AC_DEFINE_UNQUOTED(FC_DEFAULT_FONTS, "$FC_DEFAULT_FONTS",
 			   [System font directory])
