@@ -229,10 +229,13 @@ ftglue_face_goto_table( FT_Face    face,
 
     for ( nn = 0; nn < count; nn++ )
     {
-      FT_ULong  tag                = GET_ULong();
-      FT_ULong  checksum FC_UNUSED = GET_ULong();
-      FT_ULong  start              = GET_ULong();
-      FT_ULong  size     FC_UNUSED = GET_ULong();
+      FT_ULong  tag      = GET_ULong();
+      FT_ULong  checksum = GET_ULong();
+      FT_ULong  start    = GET_ULong();
+      FT_ULong  size     = GET_ULong();
+
+      FT_UNUSED(checksum);
+      FT_UNUSED(size);
 
       if ( tag == the_tag )
       {

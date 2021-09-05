@@ -338,7 +338,7 @@ FcValueHash (const FcValue *v)
     case FcTypeLangSet:
 	return FcLangSetHash (FcValueLangSet(v));
     case FcTypeRange:
-	return FcRangeHash (FcValueRange (v));
+	return FcRangeHash (v->u.r);
     }
     return 0;
 }
@@ -914,19 +914,13 @@ FcPatternAddBool (FcPattern *p, const char *object, FcBool b)
 }
 
 FcBool
-FcPatternObjectAddCharSet (FcPattern *p, FcObject object, const FcCharSet *c)
+FcPatternAddCharSet (FcPattern *p, const char *object, const FcCharSet *c)
 {
     FcValue	v;
 
     v.type = FcTypeCharSet;
     v.u.c = (FcCharSet *)c;
-    return FcPatternObjectAdd (p, object, v, FcTrue);
-}
-
-FcBool
-FcPatternAddCharSet (FcPattern *p, const char *object, const FcCharSet *c)
-{
-    return FcPatternObjectAddCharSet (p, FcObjectFromName (object), c);
+    return FcPatternAdd (p, object, v, FcTrue);
 }
 
 FcBool
@@ -940,19 +934,13 @@ FcPatternAddFTFace (FcPattern *p, const char *object, const FT_Face f)
 }
 
 FcBool
-FcPatternObjectAddLangSet (FcPattern *p, FcObject object, const FcLangSet *ls)
+FcPatternAddLangSet (FcPattern *p, const char *object, const FcLangSet *ls)
 {
     FcValue	v;
 
     v.type = FcTypeLangSet;
     v.u.l = (FcLangSet *)ls;
-    return FcPatternObjectAdd (p, object, v, FcTrue);
-}
-
-FcBool
-FcPatternAddLangSet (FcPattern *p, const char *object, const FcLangSet *ls)
-{
-    return FcPatternObjectAddLangSet (p, FcObjectFromName (object), ls);
+    return FcPatternAdd (p, object, v, FcTrue);
 }
 
 FcBool

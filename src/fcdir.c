@@ -23,10 +23,7 @@
  */
 
 #include "fcint.h"
-
-#ifdef HAVE_DIRENT_H
 #include <dirent.h>
-#endif
 
 FcBool
 FcFileIsDir (const FcChar8 *file)
@@ -170,16 +167,7 @@ FcFileScan (FcFontSet	    *set,
 	    const FcChar8   *file,
 	    FcBool	    force FC_UNUSED)
 {
-    FcConfig *config;
-    FcBool ret;
-
-    config = FcConfigReference (NULL);
-    if (!config)
-	return FcFalse;
-    ret = FcFileScanConfig (set, dirs, file, config);
-    FcConfigDestroy (config);
-
-    return ret;
+    return FcFileScanConfig (set, dirs, file, FcConfigGetCurrent ());
 }
 
 /*
@@ -201,9 +189,8 @@ FcDirScanConfig (FcFontSet	*set,
     DIR			*d;
     struct dirent	*e;
     FcStrSet		*files;
-    FcChar8		*file_prefix, *s_dir = NULL;
+    FcChar8		*file;
     FcChar8		*base;
-    const FcChar8	*sysroot = FcConfigGetSysRoot (config);
     FcBool		ret = FcTrue;
     int			i;
 
@@ -214,28 +201,20 @@ FcDirScanConfig (FcFontSet	*set,
 	return FcTrue;
 
     /* freed below */
-    file_prefix = (FcChar8 *) malloc (strlen ((char *) dir) + 1 + FC_MAX_FILE_LEN + 1);
-    if (!file_prefix) {
+    file = (FcChar8 *) malloc (strlen ((char *) dir) + 1 + FC_MAX_FILE_LEN + 1);
+    if (!file) {
 	ret = FcFalse;
 	goto bail;
     }
-    strcpy ((char *) file_prefix, (char *) dir);
-    strcat ((char *) file_prefix, FC_DIR_SEPARATOR_S);
-    base = file_prefix + strlen ((char *) file_prefix);
 
-    if (sysroot)
-	s_dir = FcStrBuildFilename (sysroot, dir, NULL);
-    else
-	s_dir = FcStrdup (dir);
-    if (!s_dir) {
-	ret = FcFalse;
-	goto bail;
-    }
+    strcpy ((char *) file, (char *) dir);
+    strcat ((char *) file, "/");
+    base = file + strlen ((char *) file);
 
     if (FcDebug () & FC_DBG_SCAN)
-	printf ("\tScanning dir %s\n", s_dir);
+	printf ("\tScanning dir %s\n", dir);
 	
-    d = opendir ((char *) s_dir);
+    d = opendir ((char *) dir);
     if (!d)
     {
 	/* Don't complain about missing directories */
@@ -255,7 +234,7 @@ FcDirScanConfig (FcFontSet	*set,
 	if (e->d_name[0] != '.' && strlen (e->d_name) < FC_MAX_FILE_LEN)
 	{
 	    strcpy ((char *) base, (char *) e->d_name);
-	    if (!FcStrSetAdd (files, file_prefix)) {
+	    if (!FcStrSetAdd (files, file)) {
 		ret = FcFalse;
 		goto bail2;
 	    }
@@ -278,10 +257,8 @@ bail2:
 bail1:
     closedir (d);
 bail:
-    if (s_dir)
-	free (s_dir);
-    if (file_prefix)
-	free (file_prefix);
+    if (file)
+	free (file);
 
     return ret;
 }
@@ -294,19 +271,10 @@ FcDirScan (FcFontSet	    *set,
 	   const FcChar8    *dir,
 	   FcBool	    force FC_UNUSED)
 {
-    FcConfig *config;
-    FcBool ret;
-
     if (cache || !force)
 	return FcFalse;
 
-    config = FcConfigReference (NULL);
-    if (!config)
-	return FcFalse;
-    ret = FcDirScanConfig (set, dirs, dir, force, config);
-    FcConfigDestroy (config);
-
-    return ret;
+    return FcDirScanConfig (set, dirs, dir, force, FcConfigGetCurrent ());
 }
 
 /*
@@ -350,8 +318,7 @@ FcDirCacheScan (const FcChar8 *dir, FcConfig *config)
     /*
      * Scan the dir
      */
-    /* Do not pass sysroot here. FcDirScanConfig() do take care of it */
-    if (!FcDirScanConfig (set, dirs, dir, FcTrue, config))
+    if (!FcDirScanConfig (set, dirs, d, FcTrue, config))
 	goto bail2;
 
     /*
@@ -386,16 +353,12 @@ FcDirCacheRescan (const FcChar8 *dir, FcConfig *config)
     FcCache *new = NULL;
     struct stat dir_stat;
     FcStrSet *dirs;
-    const FcChar8 *sysroot;
+    const FcChar8 *sysroot = FcConfigGetSysRoot (config);
     FcChar8 *d = NULL;
 #ifndef _WIN32
     int fd = -1;
 #endif
 
-    config = FcConfigReference (config);
-    if (!config)
-	return NULL;
-    sysroot = FcConfigGetSysRoot (config);
     cache = FcDirCacheLoad (dir, config, NULL);
     if (!cache)
 	goto bail;
@@ -416,8 +379,7 @@ FcDirCacheRescan (const FcChar8 *dir, FcConfig *config)
     /*
      * Scan the dir
      */
-    /* Do not pass sysroot here. FcDirScanConfig() do take care of it */
-    if (!FcDirScanConfig (NULL, dirs, dir, FcTrue, config))
+    if (!FcDirScanConfig (NULL, dirs, d, FcTrue, config))
 	goto bail1;
     /*
      * Rebuild the cache object
@@ -439,7 +401,6 @@ bail1:
 bail:
     if (d)
 	FcStrFree (d);
-    FcConfigDestroy (config);
 
     return new;
 }
@@ -452,7 +413,7 @@ FcDirCacheRead (const FcChar8 *dir, FcBool force, FcConfig *config)
 {
     FcCache		*cache = NULL;
 
-    config = FcConfigReference (config);
+    FcDirCacheCreateUUID ((FcChar8 *) dir, FcFalse, config);
     /* Try to use existing cache file */
     if (!force)
 	cache = FcDirCacheLoad (dir, config, NULL);
@@ -460,7 +421,13 @@ FcDirCacheRead (const FcChar8 *dir, FcBool force, FcConfig *config)
     /* Not using existing cache file, construct new cache */
     if (!cache)
 	cache = FcDirCacheScan (dir, config);
-    FcConfigDestroy (config);
+    if (cache)
+    {
+	FcFontSet *fs = FcCacheSet (cache);
+
+	if (cache->dirs_count == 0 && (!fs || fs->nfont == 0))
+	    FcDirCacheDeleteUUID (dir, config);
+    }
 
     return cache;
 }

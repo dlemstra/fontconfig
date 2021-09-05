@@ -33,8 +33,8 @@ dnl This is the package version number, not the shared library
 dnl version.  This same version number must appear in fontconfig/fontconfig.h
 dnl Yes, it is a pain to synchronize version numbers.  Unfortunately, it's
 dnl not possible to extract the version number here from fontconfig.h
-AC_INIT([fontconfig], [2.13.94], [https://gitlab.freedesktop.org/fontconfig/fontconfig/issues/new])
-AM_INIT_AUTOMAKE([1.11 parallel-tests dist-xz])
+AC_INIT([fontconfig], [2.13.1], [https://gitlab.freedesktop.org/fontconfig/fontconfig/issues/new])
+AM_INIT_AUTOMAKE([1.11 parallel-tests dist-bzip2])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 dnl ==========================================================================
@@ -53,7 +53,6 @@ m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], AC_SUBST([pkgconfigdir], ${libdir}/
 
 AM_MISSING_PROG([GIT], [git])
 AM_MISSING_PROG([GPERF], [gperf])
-AM_PATH_PYTHON([3])
 
 AC_MSG_CHECKING([for RM macro])
 _predefined_rm=`make -p -f /dev/null 2>/dev/null|grep '^RM ='|sed -e 's/^RM = //'`
@@ -89,19 +88,14 @@ PKGCONFIG_REQUIRES=
 PKGCONFIG_REQUIRES_PRIVATELY=
 
 dnl ==========================================================================
-AC_CANONICAL_HOST
-os_win32=no
-os_darwin=no
-case "${host_os}" in
-	cygwin*|mingw*)
-		os_win32=yes
-		;;
-	darwin*)
-		os_darwin=yes
-		;;
+case "$host" in
+  *-*-mingw*)
+    os_win32=yes
+    ;;
+  *)
+    os_win32=no
 esac
 AM_CONDITIONAL(OS_WIN32, test "$os_win32" = "yes")
-AM_CONDITIONAL(OS_DARWIN, test "$os_darwin" = "yes")
 
 dnl ==========================================================================
 dnl gettext stuff
@@ -110,7 +104,7 @@ GETTEXT_PACKAGE=$PACKAGE
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Gettext package])
 
-AM_GNU_GETTEXT_VERSION([0.19.7])
+AM_GNU_GETTEXT_VERSION([0.19.8])
 AM_GNU_GETTEXT([external])
 
 dnl ==========================================================================
@@ -163,7 +157,7 @@ dnl ==========================================================================
 # Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS([dirent.h fcntl.h stdlib.h string.h unistd.h sys/statvfs.h sys/vfs.h sys/statfs.h sys/param.h sys/mount.h])
+AC_CHECK_HEADERS([fcntl.h stdlib.h string.h unistd.h sys/statvfs.h sys/vfs.h sys/statfs.h sys/param.h sys/mount.h])
 AX_CREATE_STDINT_H([src/fcstdint.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -339,6 +333,39 @@ LIBS="$fontconfig_save_libs"
 CFLAGS="$fontconfig_save_cflags"
 
 #
+# Check for uuid
+#
+if test "$os_win32" != "yes"; then
+	use_pkgconfig_for_uuid=yes
+	if test -n "${UUID_LIBS}"; then
+		save_UUID_LIBS=$UUID_LIBS
+	fi
+	PKG_CHECK_MODULES([UUID], [uuid],
+			  [use_pkgconfig_for_uuid=yes],
+			  [use_pkgconfig_for_uuid=no])
+	if test "x$use_pkgconfig_for_uuid" = "xno"; then
+		AC_MSG_CHECKING([where uuid functions comes from])
+		AC_TRY_LINK([#include <uuid/uuid.h>],
+			[uuid_t a; uuid_generate(a);],
+			[AC_MSG_RESULT([builtin])
+			 UUID_CFLAGS=""
+			 UUID_LIBS=""
+			],[AC_MSG_ERROR([
+*** uuid is required. install util-linux.
+			])])
+	else
+		if test -z "${save_UUID_LIBS+x}" && test "x${UUID_LIBS}" != "x"; then
+			PKGCONFIG_REQUIRES_PRIVATELY="$PKGCONFIG_REQUIRES_PRIVATELY uuid"
+		fi
+	fi
+else
+	UUID_CFLAGS=""
+	UUID_LIBS=""
+fi
+AC_SUBST(UUID_CFLAGS)
+AC_SUBST(UUID_LIBS)
+
+#
 # Check expat configuration
 #
 AC_ARG_WITH(expat,
@@ -479,25 +506,28 @@ esac
 #
 
 AC_ARG_WITH(default-fonts,
-	[AC_HELP_STRING([--with-default-fonts=DIR1,DIR2,...],
-			[Use fonts from DIR1,DIR2,... when config is busted])],
+	[AC_HELP_STRING([--with-default-fonts=DIR],
+			[Use fonts from DIR when config is busted])],
 	default_fonts="$withval", default_fonts=yes)
 
-FC_DEFAULT_FONTS=""
 case "$default_fonts" in
 yes)
 	if test "$os_win32" = "yes"; then
 		FC_DEFAULT_FONTS="WINDOWSFONTDIR"
-	elif test "$os_darwin" = "yes"; then
-		FC_DEFAULT_FONTS="\t<dir>/System/Library/Fonts</dir>\n\t<dir>/Library/Fonts</dir>\n\t<dir>~/Library/Fonts</dir>\n\t<dir>/System/Library/Assets/com_apple_MobileAsset_Font3</dir>\n\t<dir>/System/Library/Assets/com_apple_MobileAsset_Font4</dir>\n"
+		AC_DEFINE_UNQUOTED(FC_DEFAULT_FONTS, "WINDOWSFONTDIR", 
+				   [Windows font directory])
 	else
-		FC_DEFAULT_FONTS="\t<dir>/usr/share/fonts</dir>\n"
+		FC_DEFAULT_FONTS="/usr/share/fonts"
+		AC_DEFINE_UNQUOTED(FC_DEFAULT_FONTS, "/usr/share/fonts", 
+				   [System font directory])
 	fi
 	;;
-esac
-
-AC_DEFINE_UNQUOTED(FC_DEFAULT_FONTS, "$FC_DEFAULT_FONTS",
+*)
+	FC_DEFAULT_FONTS="$default_fonts"
+	AC_DEFINE_UNQUOTED(FC_DEFAULT_FONTS, "$default_fonts",
 			   [System font directory])
+	;;
+esac
 
 AC_SUBST(FC_DEFAULT_FONTS)
 
@@ -785,6 +815,7 @@ its/Makefile
 po/Makefile.in
 po-conf/Makefile.in
 test/Makefile
+fontconfig.spec
 fontconfig.pc
 fontconfig-zip
 ])

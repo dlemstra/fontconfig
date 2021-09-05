@@ -759,14 +759,14 @@ interpret_simple (FcFormatContext *c,
 	    }
 	    if (l && idx == 0)
 	    {
-		if (!FcNameUnparseValue (buf, &l->value, NULL))
+		if (!FcNameUnparseValue (buf, &l->value, '\0'))
 		    return FcFalse;
 	    }
 	    else goto notfound;
         }
 	else if (l)
 	{
-	    FcNameUnparseValueList (buf, l, NULL);
+	    FcNameUnparseValueList (buf, l, '\0');
 	}
 	else
 	{

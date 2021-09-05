@@ -31,32 +31,14 @@ endif
 
 ACLOCAL_AMFLAGS = -I m4
 
-MESON_FILES = \
-	conf.d/link_confs.py \
-	conf.d/write-35-lang-normalize-conf.py \
-	doc/edit-sgml.py \
-	doc/extract-man-list.py \
-	doc/run-quiet.py \
-	fc-case/fc-case.py \
-	fc-lang/fc-lang.py \
-	meson.build \
-	meson_options.txt \
-	src/cutout.py \
-	src/fcstdint.h.in \
-	src/fcwindows.h \
-	src/fontconfig.def.in \
-	src/makealias.py \
-	$(wildcard $(srcdir)/*/meson.build) \
-	$(wildcard $(srcdir)/meson-cc-tests/*) \
-	$(wildcard $(srcdir)/subprojects/*.wrap)
-
 EXTRA_DIST = config.rpath  \
 	fontconfig.pc.in \
 	fonts.conf.in \
 	fonts.dtd \
+	fontconfig.spec.in \
+	fontconfig.spec \
 	fontconfig-zip.in \
-	config-fixups.h \
-	$(MESON_FILES)
+	config-fixups.h
 CLEANFILES = fonts.conf
 DISTCLEANFILES = config.cache doltcompile
 MAINTAINERCLEANFILES = \
@@ -172,15 +154,5 @@ debuild-dirs: distdir
 	$(RM) -r $(distdir).orig/debian
 
 DISTCHECK_CONFIGURE_FLAGS =
-
-check-versions:
-	@$(GREP) -e '^\s*version\s*:\s*.'$(VERSION)'.,' $(srcdir)/meson.build >/dev/null || { \
-	  echo "======================================================================================"; \
-	  echo "Meson version does not seem to match autotools version $(VERSION), update meson.build!"; \
-	  echo "======================================================================================"; \
-	  exit 1; \
-	}
-
-all-local: check-versions
 
 -include $(top_srcdir)/git.mk

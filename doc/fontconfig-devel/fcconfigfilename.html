@@ -15,8 +15,8 @@ REL="PREVIOUS"
 TITLE="FcFontList"
 HREF="fcfontlist.html"><LINK
 REL="NEXT"
-TITLE="FcConfigGetFilename"
-HREF="fcconfiggetfilename.html"></HEAD
+TITLE="FcConfigParseAndLoad"
+HREF="fcconfigparseandload.html"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -58,7 +58,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="fcconfiggetfilename.html"
+HREF="fcconfigparseandload.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -75,7 +75,7 @@ NAME="FCCONFIGFILENAME"
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
-NAME="AEN3656"
+NAME="AEN3653"
 ></A
 ><H2
 >Name</H2
@@ -83,7 +83,7 @@ NAME="AEN3656"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN3659"
+NAME="AEN3656"
 ></A
 ><H2
 >Synopsis</H2
@@ -92,7 +92,7 @@ CLASS="FUNCSYNOPSIS"
 ><P
 ></P
 ><A
-NAME="AEN3660"
+NAME="AEN3657"
 ></A
 ><TABLE
 BORDER="0"
@@ -129,15 +129,33 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN3667"
+NAME="AEN3664"
 ></A
 ><H2
 >Description</H2
 ><P
->This function is deprecated and is replaced by <TT
-CLASS="FUNCTION"
->FcConfigGetFilename</TT
->.
+>Given the specified external entity name, return the associated filename.
+This provides applications a way to convert various configuration file
+references into filename form.
+    </P
+><P
+>A null or empty <TT
+CLASS="PARAMETER"
+><I
+>name</I
+></TT
+> indicates that the default configuration file should
+be used; which file this references can be overridden with the
+FONTCONFIG_FILE environment variable.  Next, if the name starts with <TT
+CLASS="PARAMETER"
+><I
+>~</I
+></TT
+>, it
+refers to a file in the current users home directory.  Otherwise if the name
+doesn't start with '/', it refers to a file in the default configuration
+directory; the built-in default directory can be overridden with the
+FONTCONFIG_PATH environment variable.
 	    </P
 ></DIV
 ><DIV
@@ -174,7 +192,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="fcconfiggetfilename.html"
+HREF="fcconfigparseandload.html"
 ACCESSKEY="N"
 >Next &#62;&#62;&#62;</A
 ></TD
@@ -198,7 +216,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->FcConfigGetFilename</TD
+>FcConfigParseAndLoad</TD
 ></TR
 ></TABLE
 ></DIV

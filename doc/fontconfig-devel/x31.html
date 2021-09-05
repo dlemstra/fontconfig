@@ -208,7 +208,6 @@ CLASS="PROGRAMLISTING"
                         const FcCharSet *c;
 			void *f;
 			const FcLangSet *l;
-			const FcRange   *r;
                 } u;
         } FcValue;
     </PRE
@@ -237,7 +236,6 @@ CLASS="PROGRAMLISTING"
         FcTypeCharSet   c               FcCharSet *
 	FcTypeFTFace	f		void * (FT_Face)
 	FcTypeLangSet	l		FcLangSet *
-	FcTypeRange	r		FcRange *
     </PRE
 ></TD
 ></TR
@@ -251,15 +249,14 @@ CLASS="SECT2"
 CLASS="SECT2"
 ><A
 NAME="AEN58"
->FcPattern, FcPatternIter</A
+>FcPattern</A
 ></H2
 ><P
->An FcPattern holds a set of names with associated value lists; each name refers to a
+>holds a set of names with associated value lists; each name refers to a
 property of a font.  FcPatterns are used as inputs to the matching code as
 well as holding information about specific fonts.  Each property can hold
 one or more values; conventionally all of the same type, although the
-interface doesn't demand that.  An FcPatternIter is used during iteration to
-access properties in FcPattern.
+interface doesn't demand that.
     </P
 ></DIV
 ><DIV

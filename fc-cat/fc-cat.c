@@ -36,9 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -81,7 +79,7 @@ extern int optind, opterr, optopt;
  * POSIX has broken stdio so that putc must do thread-safe locking,
  * this is a serious performance problem for applications doing large
  * amounts of IO with putc (as is done here).  If available, use
- * the putc_unlocked variant instead.
+ * the putc_unlocked varient instead.
  */
  
 #if defined(putc_unlocked) || defined(_IO_putc_unlocked)

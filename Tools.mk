@@ -27,15 +27,28 @@ DIR=fc-$(TAG)
 OUT=fc$(TAG)
 TMPL=$(OUT).tmpl.h
 TARG=$(OUT).h
-TOOL=$(srcdir)/$(DIR).py
+TSRC=$(DIR).c
+TOOL=./$(DIR)$(EXEEXT_FOR_BUILD)
 
-noinst_SCRIPTS = $(TOOL)
-EXTRA_DIST = $(TARG) $(TMPL) $(DIST)
+EXTRA_DIST = $(TARG) $(TMPL) $(TSRC) $(DIST)
 
-$(TARG): $(TMPL) $(TOOL)
-	$(AM_V_GEN) \
+AM_CPPFLAGS = \
+	   -I$(builddir) \
+	   -I$(srcdir) \
+	   -I$(top_builddir)/src \
+	   -I$(top_srcdir)/src \
+	   -I$(top_builddir) \
+	   -I$(top_srcdir) \
+	   -DHAVE_CONFIG_H \
+	   $(WARN_CFLAGS)
+
+$(TOOL): $(TSRC) $(ALIAS_FILES)
+	$(AM_V_GEN) $(CC_FOR_BUILD) -o $(TOOL) $< $(AM_CPPFLAGS)
+
+$(TARG): $(TMPL) $(TSRC) $(DEPS)
+	$(AM_V_GEN) $(MAKE) $(TOOL) && \
 	$(RM) $(TARG) && \
-	$(PYTHON) $(TOOL) $(ARGS) --template $< --output $(TARG).tmp && \
+	$(TOOL) $(ARGS) < $< > $(TARG).tmp && \
 	mv $(TARG).tmp $(TARG) || ( $(RM) $(TARG).tmp && false )
 noinst_HEADERS=$(TARG)
 
@@ -46,6 +59,6 @@ BUILT_SOURCES = $(ALIAS_FILES)
 $(ALIAS_FILES):
 	$(AM_V_GEN) touch $@
 
-CLEANFILES = $(ALIAS_FILES)
+CLEANFILES = $(ALIAS_FILES) $(TOOL)
 
 MAINTAINERCLEANFILES = $(TARG)
