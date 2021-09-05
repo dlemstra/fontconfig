@@ -96,6 +96,9 @@ FcRangePromote (double v, FcValuePromotionBuffer *vbuf)
 FcBool
 FcRangeIsInRange (const FcRange *a, const FcRange *b)
 {
+    if (!a || !b)
+	return FcFalse;
+
     return a->begin >= b->begin && a->end <= b->end;
 }
 
@@ -104,22 +107,20 @@ FcRangeCompare (FcOp op, const FcRange *a, const FcRange *b)
 {
     switch ((int) op) {
     case FcOpEqual:
-	return a->begin == b->begin && a->end == b->end;
     case FcOpContains:
     case FcOpListing:
 	return FcRangeIsInRange (a, b);
     case FcOpNotEqual:
-	return a->begin != b->begin || a->end != b->end;
     case FcOpNotContains:
 	return !FcRangeIsInRange (a, b);
     case FcOpLess:
-	return a->end < b->begin;
+	return a->begin < b->begin;
     case FcOpLessEqual:
-	return a->end <= b->begin;
+	return a->begin <= b->begin;
     case FcOpMore:
-	return a->begin > b->end;
+	return a->end > b->end;
     case FcOpMoreEqual:
-	return a->begin >= b->end;
+	return a->end >= b->end;
     default:
 	break;
     }

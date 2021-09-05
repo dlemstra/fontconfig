@@ -1,5 +1,5 @@
 #
-#  fontconfig/fc-validate/Makefile.am
+#  fontconfig/fc-query/Makefile.am
 #
 #  Copyright © 2003 Keith Packard
 #

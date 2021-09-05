@@ -10,7 +10,7 @@ REL="HOME"
 HREF="t1.html"><LINK
 REL="UP"
 TITLE="FcConfig"
-HREF="x103.html#AEN3038"><LINK
+HREF="x102.html#AEN2752"><LINK
 REL="PREVIOUS"
 TITLE="FcConfigGetFonts"
 HREF="fcconfiggetfonts.html"><LINK
@@ -75,7 +75,7 @@ NAME="FCCONFIGGETBLANKS"
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
-NAME="AEN3353"
+NAME="AEN3067"
 ></A
 ><H2
 >Name</H2
@@ -83,7 +83,7 @@ NAME="AEN3353"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN3356"
+NAME="AEN3070"
 ></A
 ><H2
 >Synopsis</H2
@@ -92,7 +92,7 @@ CLASS="FUNCSYNOPSIS"
 ><P
 ></P
 ><A
-NAME="AEN3357"
+NAME="AEN3071"
 ></A
 ><TABLE
 BORDER="0"
@@ -129,13 +129,21 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN3364"
+NAME="AEN3078"
 ></A
 ><H2
 >Description</H2
 ><P
->FcBlanks is deprecated.
-This function always returns NULL.
+>Returns the FcBlanks object associated with the given configuration, if no
+blanks were present in the configuration, this function will return 0.
+The returned FcBlanks object if not NULL, is valid as long as the owning
+FcConfig is alive.
+If <TT
+CLASS="PARAMETER"
+><I
+>config</I
+></TT
+> is NULL, the current configuration is used.
 	    </P
 ></DIV
 ><DIV
@@ -188,7 +196,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="x103.html#AEN3038"
+HREF="x102.html#AEN2752"
 ACCESSKEY="U"
 >Up</A
 ></TD

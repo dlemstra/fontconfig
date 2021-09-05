@@ -39,7 +39,6 @@ static const struct {
     { FC_EMBEDDED_BITMAP_OBJECT,   FcTrue 	},  /* !FC_LOAD_NO_BITMAP */
     { FC_DECORATIVE_OBJECT,	   FcFalse	},
     { FC_SYMBOL_OBJECT,		   FcFalse	},
-    { FC_VARIABLE_OBJECT,	   FcFalse	},
 };
 
 #define NUM_FC_BOOL_DEFAULTS	(int) (sizeof FcBoolDefaults / sizeof FcBoolDefaults[0])
@@ -238,39 +237,31 @@ FcDefaultFini (void)
 void
 FcDefaultSubstitute (FcPattern *pattern)
 {
-    FcPatternIter iter;
     FcValue v, namelang, v2;
     int	    i;
     double	dpi, size, scale, pixelsize;
 
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_WEIGHT_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_WEIGHT_OBJECT, 0, &v) == FcResultNoMatch )
 	FcPatternObjectAddInteger (pattern, FC_WEIGHT_OBJECT, FC_WEIGHT_NORMAL);
 
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_SLANT_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_SLANT_OBJECT, 0, &v) == FcResultNoMatch)
 	FcPatternObjectAddInteger (pattern, FC_SLANT_OBJECT, FC_SLANT_ROMAN);
 
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_WIDTH_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_WIDTH_OBJECT, 0, &v) == FcResultNoMatch)
 	FcPatternObjectAddInteger (pattern, FC_WIDTH_OBJECT, FC_WIDTH_NORMAL);
 
     for (i = 0; i < NUM_FC_BOOL_DEFAULTS; i++)
-	if (!FcPatternFindObjectIter (pattern, &iter, FcBoolDefaults[i].field))
+	if (FcPatternObjectGet (pattern, FcBoolDefaults[i].field, 0, &v) == FcResultNoMatch)
 	    FcPatternObjectAddBool (pattern, FcBoolDefaults[i].field, FcBoolDefaults[i].value);
 
     if (FcPatternObjectGetDouble (pattern, FC_SIZE_OBJECT, 0, &size) != FcResultMatch)
-    {
-	FcRange *r;
-	double b, e;
-	if (FcPatternObjectGetRange (pattern, FC_SIZE_OBJECT, 0, &r) == FcResultMatch && FcRangeGetDouble (r, &b, &e))
-	    size = (b + e) * .5;
-	else
-	    size = 12.0L;
-    }
+	size = 12.0L;
     if (FcPatternObjectGetDouble (pattern, FC_SCALE_OBJECT, 0, &scale) != FcResultMatch)
 	scale = 1.0;
     if (FcPatternObjectGetDouble (pattern, FC_DPI_OBJECT, 0, &dpi) != FcResultMatch)
 	dpi = 75.0;
 
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_PIXEL_SIZE_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_PIXEL_SIZE_OBJECT, 0, &v) != FcResultMatch)
     {
 	(void) FcPatternObjectDel (pattern, FC_SCALE_OBJECT);
 	FcPatternObjectAddDouble (pattern, FC_SCALE_OBJECT, scale);
@@ -282,22 +273,25 @@ FcDefaultSubstitute (FcPattern *pattern)
     }
     else
     {
-	FcPatternIterGetValue(pattern, &iter, 0, &v, NULL);
 	size = v.u.d;
 	size = size / dpi * 72.0 / scale;
     }
     (void) FcPatternObjectDel (pattern, FC_SIZE_OBJECT);
     FcPatternObjectAddDouble (pattern, FC_SIZE_OBJECT, size);
 
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_FONTVERSION_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_FONTVERSION_OBJECT, 0, &v) == FcResultNoMatch)
+    {
 	FcPatternObjectAddInteger (pattern, FC_FONTVERSION_OBJECT, 0x7fffffff);
+    }
 
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_HINT_STYLE_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_HINT_STYLE_OBJECT, 0, &v) == FcResultNoMatch)
+    {
 	FcPatternObjectAddInteger (pattern, FC_HINT_STYLE_OBJECT, FC_HINT_FULL);
-
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_NAMELANG_OBJECT))
+    }
+    if (FcPatternObjectGet (pattern, FC_NAMELANG_OBJECT, 0, &v) == FcResultNoMatch)
+    {
 	FcPatternObjectAddString (pattern, FC_NAMELANG_OBJECT, FcGetDefaultLang ());
-
+    }
     /* shouldn't be failed. */
     FcPatternObjectGet (pattern, FC_NAMELANG_OBJECT, 0, &namelang);
     /* Add a fallback to ensure the english name when the requested language
@@ -313,17 +307,17 @@ FcDefaultSubstitute (FcPattern *pattern)
      */
     v2.type = FcTypeString;
     v2.u.s = (FcChar8 *) "en-us";
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_FAMILYLANG_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_FAMILYLANG_OBJECT, 0, &v) == FcResultNoMatch)
     {
 	FcPatternObjectAdd (pattern, FC_FAMILYLANG_OBJECT, namelang, FcTrue);
 	FcPatternObjectAddWithBinding (pattern, FC_FAMILYLANG_OBJECT, v2, FcValueBindingWeak, FcTrue);
     }
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_STYLELANG_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_STYLELANG_OBJECT, 0, &v) == FcResultNoMatch)
     {
 	FcPatternObjectAdd (pattern, FC_STYLELANG_OBJECT, namelang, FcTrue);
 	FcPatternObjectAddWithBinding (pattern, FC_STYLELANG_OBJECT, v2, FcValueBindingWeak, FcTrue);
     }
-    if (!FcPatternFindObjectIter (pattern, &iter, FC_FULLNAMELANG_OBJECT))
+    if (FcPatternObjectGet (pattern, FC_FULLNAMELANG_OBJECT, 0, &v) == FcResultNoMatch)
     {
 	FcPatternObjectAdd (pattern, FC_FULLNAMELANG_OBJECT, namelang, FcTrue);
 	FcPatternObjectAddWithBinding (pattern, FC_FULLNAMELANG_OBJECT, v2, FcValueBindingWeak, FcTrue);

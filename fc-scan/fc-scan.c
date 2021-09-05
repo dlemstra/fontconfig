@@ -39,15 +39,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <locale.h>
-
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(x)		(dgettext(GETTEXT_PACKAGE, x))
-#else
-#define dgettext(d, s)	(s)
-#define _(x)		(x)
-#endif
 
 #ifndef HAVE_GETOPT
 #define HAVE_GETOPT 0
@@ -61,7 +52,7 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 static const struct option longopts[] = {
-    {"brief", 0, 0, 'b'},
+    {"ignore-blanks", 0, 0, 'b'},
     {"format", 1, 0, 'f'},
     {"version", 0, 0, 'V'},
     {"help", 0, 0, 'h'},
@@ -79,24 +70,24 @@ usage (char *program, int error)
 {
     FILE *file = error ? stderr : stdout;
 #if HAVE_GETOPT_LONG
-    fprintf (file, _("usage: %s [-bVh] [-f FORMAT] [--brief] [--format FORMAT] [--version] [--help] font-file...\n"),
+    fprintf (file, "usage: %s [-Vbh] [-f FORMAT] [--ignore-blanks] [--format FORMAT] [--version] [--help] font-file...\n",
 	     program);
 #else
-    fprintf (file, _("usage: %s [-bVh] [-f FORMAT] font-file...\n"),
+    fprintf (file, "usage: %s [-Vbh] [-f FORMAT] font-file...\n",
 	     program);
 #endif
-    fprintf (file, _("Scan font files and directories, and print resulting pattern(s)\n"));
+    fprintf (file, "Scan font files and directories, and print resulting pattern(s)\n");
     fprintf (file, "\n");
 #if HAVE_GETOPT_LONG
-    fprintf (file, _("  -b, --brief          display font pattern briefly\n"));
-    fprintf (file, _("  -f, --format=FORMAT  use the given output format\n"));
-    fprintf (file, _("  -V, --version        display font config version and exit\n"));
-    fprintf (file, _("  -h, --help           display this help and exit\n"));
+    fprintf (file, "  -b, --ignore-blanks  ignore blanks to compute languages\n");
+    fprintf (file, "  -f, --format=FORMAT  use the given output format\n");
+    fprintf (file, "  -V, --version        display font config version and exit\n");
+    fprintf (file, "  -h, --help           display this help and exit\n");
 #else
-    fprintf (file, _("  -b         (brief)         display font pattern briefly\n"));
-    fprintf (file, _("  -f FORMAT  (format)        use the given output format\n"));
-    fprintf (file, _("  -V         (version)       display font config version and exit\n"));
-    fprintf (file, _("  -h         (help)          display this help and exit\n"));
+    fprintf (file, "  -b         (ignore-blanks) ignore blanks to compute languages\n");
+    fprintf (file, "  -f FORMAT  (format)        use the given output format\n");
+    fprintf (file, "  -V         (version)       display font config version and exit\n");
+    fprintf (file, "  -h         (help)          display this help and exit\n");
 #endif
     exit (error);
 }
@@ -104,14 +95,14 @@ usage (char *program, int error)
 int
 main (int argc, char **argv)
 {
-    int         brief = 0;
     FcChar8     *format = NULL;
     int		i;
+    int		ignore_blanks = 0;
     FcFontSet   *fs;
+    FcBlanks    *blanks = NULL;
 #if HAVE_GETOPT_LONG || HAVE_GETOPT
     int		c;
 
-    setlocale (LC_ALL, "");
 #if HAVE_GETOPT_LONG
     while ((c = getopt_long (argc, argv, "bf:Vh", longopts, NULL)) != -1)
 #else
@@ -120,7 +111,7 @@ main (int argc, char **argv)
     {
 	switch (c) {
 	case 'b':
-	    brief = 1;
+	    ignore_blanks = 1;
 	    break;
 	case 'f':
 	    format = (FcChar8 *) strdup (optarg);
@@ -144,20 +135,22 @@ main (int argc, char **argv)
 	usage (argv[0], 1);
 
     fs = FcFontSetCreate ();
+    if (!ignore_blanks)
+	blanks = FcConfigGetBlanks (NULL);
 
     for (; i < argc; i++)
     {
 	const FcChar8 *file = (FcChar8*) argv[i];
 
 	if (!FcFileIsDir (file))
-	    FcFileScan (fs, NULL, NULL, NULL, file, FcTrue);
+	    FcFileScan (fs, NULL, NULL, blanks, file, FcTrue);
 	else
 	{
 	    FcStrSet *dirs = FcStrSetCreate ();
 	    FcStrList *strlist = FcStrListCreate (dirs);
 	    do
 	    {
-		FcDirScan (fs, dirs, NULL, NULL, file, FcTrue);
+		FcDirScan (fs, dirs, NULL, blanks, file, FcTrue);
 	    }
 	    while ((file = FcStrListNext (strlist)));
 	    FcStrListDone (strlist);
@@ -167,13 +160,9 @@ main (int argc, char **argv)
 
     for (i = 0; i < fs->nfont; i++)
     {
-	FcPattern *pat = fs->fonts[i];
+	FcPattern *pat;
 
-	if (brief)
-	{
-	    FcPatternDel (pat, FC_CHARSET);
-	    FcPatternDel (pat, FC_LANG);
-	}
+	pat = fs->fonts[i];
 
 	if (format)
 	{

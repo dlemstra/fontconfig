@@ -77,12 +77,9 @@ AM_CPPFLAGS = 						\
 	$(ICONV_CFLAGS)					\
 	$(LIBXML2_CFLAGS)				\
 	$(EXPAT_CFLAGS)					\
-	$(UUID_CFLAGS)					\
 	$(WARN_CFLAGS)					\
 	-DFC_CACHEDIR='"$(FC_CACHEDIR)"'                \
-	-DFONTCONFIG_PATH='"$(BASECONFIGDIR)"'		\
-	-DFC_TEMPLATEDIR='"$(TEMPLATEDIR)"'
-LDADD  = $(LIBINTL)
+	-DFONTCONFIG_PATH='"$(BASECONFIGDIR)"'
 
 EXTRA_DIST += makealias
 
@@ -92,15 +89,18 @@ ALIAS_FILES = fcalias.h fcaliastail.h fcftalias.h fcftaliastail.h
 
 BUILT_SOURCES = $(ALIAS_FILES) \
 	../fc-case/fccase.h \
+	../fc-glyphname/fcglyphname.h \
 	../fc-lang/fclang.h \
 	stamp-fcstdint \
-	$(builddir)/fcobjshash.h \
+	fcobjshash.h \
 	fcobjshash.gperf
 
 noinst_PROGRAMS = fcarch
 
 ../fc-case/fccase.h:
 	cd ../fc-case && $(MAKE) $(AM_MAKEFLAGS) fccase.h
+../fc-glyphname/fcglyphname.h:
+	cd ../fc-glyphname && $(MAKE) $(AM_MAKEFLAGS) fcglyphname.h
 ../fc-lang/fclang.h:
 	cd ../fc-lang && $(MAKE) $(AM_MAKEFLAGS) fclang.h
 
@@ -109,17 +109,17 @@ fcobjshash.gperf: Makefile stamp-fcobjshash.gperf
 	@$(MAKE) stamp-fcobjshash.gperf
 	@touch -r stamp-fcobjshash.gperf $@
 stamp-fcobjshash.gperf: fcobjshash.gperf.h fcobjs.h
-	$(AM_V_GEN) $(CPP) -I$(top_srcdir) $(CPPFLAGS) $< | \
+	$(AM_V_GEN) $(CPP) -I$(top_srcdir) $< | \
 	$(SED) 's/^ *//;s/ *, */,/' | \
+	$(GREP) '^[^#]' | \
 	awk ' \
 		/CUT_OUT_BEGIN/ { no_write=1; next; }; \
 		/CUT_OUT_END/ { no_write=0; next; }; \
-		/^$$/||/^#/ { next; }; \
 		{ if (!no_write) print; next; }; \
 	' - > $@.tmp && \
 	mv -f $@.tmp fcobjshash.gperf && touch $@ || ( $(RM) $@.tmp && false )
 
-$(builddir)/fcobjshash.h: Makefile fcobjshash.gperf
+fcobjshash.h: Makefile fcobjshash.gperf
 	$(AM_V_GEN) $(GPERF) --pic -m 100 fcobjshash.gperf > $@.tmp && \
 	mv -f $@.tmp $@ || ( $(RM) $@.tmp && false )
 
@@ -130,6 +130,7 @@ libfontconfig_la_SOURCES = \
 	fcarch.h \
 	fcatomic.c \
 	fcatomic.h \
+	fcblanks.c \
 	fccache.c \
 	fccfg.c \
 	fccharset.c \
@@ -140,8 +141,6 @@ libfontconfig_la_SOURCES = \
 	fcformat.c \
 	fcfreetype.c \
 	fcfs.c \
-	fcptrlist.c \
-	fchash.c \
 	fcinit.c \
 	fclang.c \
 	fclist.c \
@@ -151,6 +150,7 @@ libfontconfig_la_SOURCES = \
 	fcname.c \
 	fcobjs.c \
 	fcobjs.h \
+	fcobjshash.h \
 	fcpat.c \
 	fcrange.c \
 	fcserialize.c \
@@ -167,7 +167,7 @@ lib_LTLIBRARIES = libfontconfig.la
 libfontconfig_la_LDFLAGS =			\
 	-version-info @LIBT_VERSION_INFO@ -no-undefined $(export_symbols)
 
-libfontconfig_la_LIBADD = $(ICONV_LIBS) $(FREETYPE_LIBS) $(LIBXML2_LIBS) $(EXPAT_LIBS) $(UUID_LIBS) $(LTLIBINTL)
+libfontconfig_la_LIBADD = $(ICONV_LIBS) $(FREETYPE_LIBS) $(LIBXML2_LIBS) $(EXPAT_LIBS)
 
 libfontconfig_la_DEPENDENCIES = $(fontconfig_def_dependency)
 
@@ -200,15 +200,12 @@ stamp-fcstdint: $(top_builddir)/config.status
 	$(SHELL) ./config.status src/fcstdint.h
 	@touch $@
 
-CLEANFILES =		\
-	$(ALIAS_FILES)	\
-	fontconfig.def	\
-	$(builddir)/fcobjshash.h
-
+CLEANFILES = $(ALIAS_FILES) fontconfig.def
 DISTCLEANFILES = 	\
 	stamp-fcstdint	\
 	fcstdint.h	\
 	stamp-fcobjshash.gperf	\
+	fcobjshash.h	\
 	fcobjshash.gperf
 
 fontconfig.def: $(PUBLIC_FILES) $(PUBLIC_FT_FILES)

@@ -46,10 +46,7 @@ _FcValuePrintFile (FILE *f, const FcValue v)
 	fprintf (f, "\"%s\"", v.u.s);
 	break;
     case FcTypeBool:
-	fprintf (f,
-		 v.u.b == FcTrue  ? "True" :
-		 v.u.b == FcFalse ? "False" :
-				    "DontCare");
+	fprintf (f, "%s", v.u.b ? "True" : "False");
 	break;
     case FcTypeMatrix:
 	fprintf (f, "[%g %g; %g %g]", v.u.m->xx, v.u.m->xy, v.u.m->yx, v.u.m->yy);
@@ -65,7 +62,7 @@ _FcValuePrintFile (FILE *f, const FcValue v)
 	fprintf (f, "face");
 	break;
     case FcTypeRange:
-	fprintf (f, "[%g %g]", v.u.r->begin, v.u.r->end);
+	fprintf (f, "[%g %g)", v.u.r->begin, v.u.r->end);
 	break;
     }
 }
@@ -187,21 +184,22 @@ FcCharSetPrint (const FcCharSet *c)
 void
 FcPatternPrint (const FcPattern *p)
 {
-    FcPatternIter iter;
+    int		    i;
+    FcPatternElt   *e;
 
     if (!p)
     {
 	printf ("Null pattern\n");
 	return;
     }
-    printf ("Pattern has %d elts (size %d)\n", FcPatternObjectCount (p), p->size);
-    FcPatternIterStart (p, &iter);
-    do
+    printf ("Pattern has %d elts (size %d)\n", p->num, p->size);
+    for (i = 0; i < p->num; i++)
     {
-	printf ("\t%s:", FcPatternIterGetObject (p, &iter));
-	FcValueListPrint (FcPatternIterGetValues (p, &iter));
+	e = &FcPatternElts(p)[i];
+	printf ("\t%s:", FcObjectName(e->object));
+	FcValueListPrint (FcPatternEltValues(e));
 	printf ("\n");
-    } while (FcPatternIterNext (p, &iter));
+    }
     printf ("\n");
 }
 
@@ -478,9 +476,6 @@ FcTestPrint (const FcTest *test)
     case FcMatchScan:
 	printf ("scan ");
 	break;
-    case FcMatchKindEnd:
-	/* shouldn't be reached */
-	return;
     }
     switch (test->qual) {
     case FcQualAny:
@@ -513,12 +508,13 @@ FcEditPrint (const FcEdit *edit)
 }
 
 void
-FcRulePrint (const FcRule *rule)
+FcSubstPrint (const FcSubst *subst)
 {
+    FcRule *r;
     FcRuleType last_type = FcRuleUnknown;
-    const FcRule *r;
 
-    for (r = rule; r; r = r->next)
+    printf ("match\n");
+    for (r = subst->rule; r; r = r->next)
     {
 	if (last_type != r->type)
 	{

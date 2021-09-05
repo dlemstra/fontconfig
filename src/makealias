@@ -14,7 +14,7 @@ while read name; do
 		;;
 	*)
 		alias="IA__$name"
-		hattr='FC_ATTRIBUTE_VISIBILITY_HIDDEN'
+		hattr='__attribute((visibility("hidden")))'
 		echo "extern __typeof ($name) $alias $hattr;" >> $HEAD
 		echo "#define $name $alias" >> $HEAD
 		ifdef=`grep -l '^'$name'[ (]' "$SRCDIR"/*.c | sed -n 1p | sed -e 's/^.*\/\([^.]*\)\.c/__\1__/'`
@@ -28,7 +28,7 @@ while read name; do
 			last=$ifdef
 		fi
 		echo "# undef $name" >> $TAIL
-		cattr='__attribute((alias("'$alias'"))) FC_ATTRIBUTE_VISIBILITY_EXPORT'
+		cattr='__attribute((alias("'$alias'"), visibility("default")))'
 		echo "extern __typeof ($name) $name $cattr;" >> $TAIL
 		;;
 	esac

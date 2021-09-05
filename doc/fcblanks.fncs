@@ -26,8 +26,7 @@
 @TYPE1@		void
 @PURPOSE@	Create an FcBlanks
 @DESC@
-FcBlanks is deprecated.
-This function always returns NULL.
+Creates an empty FcBlanks object.
 @@
 
 @RET@		void
@@ -35,8 +34,7 @@ This function always returns NULL.
 @TYPE1@		FcBlanks *			@ARG1@		b
 @PURPOSE@	Destroy and FcBlanks
 @DESC@
-FcBlanks is deprecated.
-This function does nothing.
+Destroys an FcBlanks object, freeing any associated memory.
 @@
 
 @RET@		FcBool
@@ -45,8 +43,8 @@ This function does nothing.
 @TYPE2@		FcChar32% 			@ARG2@		ucs4
 @PURPOSE@	Add a character to an FcBlanks
 @DESC@
-FcBlanks is deprecated.
-This function always returns FALSE.
+Adds a single character to an FcBlanks object, returning FcFalse
+if this process ran out of memory.
 @@
 
 @RET@		FcBool
@@ -55,6 +53,6 @@ This function always returns FALSE.
 @TYPE2@		FcChar32% 			@ARG2@		ucs4
 @PURPOSE@	Query membership in an FcBlanks
 @DESC@
-FcBlanks is deprecated.
-This function always returns FALSE.
+Returns whether the specified FcBlanks object contains the indicated Unicode
+value.
 @@

@@ -21,22 +21,21 @@
 #  TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 #  PERFORMANCE OF THIS SOFTWARE.
 
-SUBDIRS=fontconfig fc-case fc-lang src \
-	fc-cache fc-cat fc-conflist fc-list fc-match \
-	fc-pattern fc-query fc-scan fc-validate conf.d \
-	its po po-conf test
+SUBDIRS=fontconfig fc-blanks fc-case fc-lang fc-glyphname src \
+	fc-cache fc-cat fc-list fc-match fc-pattern fc-query fc-scan \
+	fc-validate conf.d test
 if ENABLE_DOCS
 SUBDIRS += doc
 endif
 
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = config.rpath  \
-	fontconfig.pc.in \
-	fonts.conf.in \
+EXTRA_DIST = \
+        fontconfig.pc.in \
+        fonts.conf.in \
 	fonts.dtd \
-	fontconfig.spec.in \
-	fontconfig.spec \
+        fontconfig.spec.in \
+        fontconfig.spec \
 	fontconfig-zip.in \
 	config-fixups.h
 CLEANFILES = fonts.conf
