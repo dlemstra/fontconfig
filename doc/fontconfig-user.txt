@@ -117,6 +117,8 @@ bled
                           familylang, stylelang, and fullnamelang
   prgname         String  String  Name of the running program
   postscriptname  String  Font family name in PostScript
+  fonthashint     Bool    Whether the font has hinting
+  order           Int     Order number of the font
 
 Font Matching
 
@@ -275,7 +277,7 @@ Configuration File Format
    configuration directory (/etc/fonts). Each configuration file
    should contain the following structure:
         <?xml version="1.0"?>
-        <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+        <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
         <fontconfig>
         ...
         </fontconfig>
@@ -286,13 +288,23 @@ Configuration File Format
    contain <dir>, <cachedir>, <include>, <match> and <alias>
    elements in any order.
 
-<dir prefix="default">
+<dir prefix="default" salt="">
 
    This element contains a directory name which will be scanned
-   for font files to include in the set of available fonts. If
-   'prefix' is set to "xdg", the value in the XDG_DATA_HOME
+   for font files to include in the set of available fonts.
+
+   If 'prefix' is set to "default" or "cwd", the current working
+   directory will be added as the path prefix prior to the value.
+   If 'prefix' is set to "xdg", the value in the XDG_DATA_HOME
    environment variable will be added as the path prefix. please
-   see XDG Base Directory Specification for more details.
+   see XDG Base Directory Specification for more details. If
+   'prefix' is set to "relative", the path of current file will be
+   added prior to the value.
+
+   'salt' property affects to determine cache filename. this is
+   useful for example when having different fonts sets on same
+   path at container and share fonts from host on different font
+   path.
 
 <cachedir prefix="default">
 
@@ -332,6 +344,14 @@ Configuration File Format
    configuration information. <config> can contain <blank> and
    <rescan> elements in any order.
 
+<description domain="fontconfig-conf">
+
+   This element is supposed to hold strings which describe what a
+   config is used for. This string can be translated through
+   gettext. 'domain' needs to be set the proper name to apply
+   then. fontconfig will tries to retrieve translations with
+   'domain' from gettext.
+
 <blank>
 
    Fonts often include "broken" glyphs which appear in the
@@ -340,6 +360,23 @@ Configuration File Format
    supposed to be blank in an <int> element. Characters outside of
    this set which are drawn as blank will be elided from the set
    of characters supported by the font.
+
+<remap-dir prefix="default" as-path="" salt="">
+
+   This element contains a directory name where will be mapped as
+   the path 'as-path' in cached information. This is useful if the
+   directory name is an alias (via a bind mount or symlink) to
+   another directory in the system for which cached font
+   information is likely to exist.
+
+   'salt' property affects to determine cache filename as same as
+   <dir> element.
+
+<reset-dirs />
+
+   This element removes all of fonts directories where added by
+   <dir> elements. This is useful to override fonts directories
+   from system to own fonts directories only.
 
 <rescan>
 
@@ -592,7 +629,7 @@ System configuration file
 
    This is an example of a system-wide configuration file
 <?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
 <!-- /etc/fonts/fonts.conf file to configure system font access -->
 <fontconfig>
 <!--
@@ -614,12 +651,12 @@ it>
         Names not including any well known alias are given 'sans-serif'
 -->
 <match target="pattern">
-        <test qual="all" name="family" mode="not_eq"><string>sans-serif<
-/string></test>
-        <test qual="all" name="family" mode="not_eq"><string>serif</stri
-ng></test>
-        <test qual="all" name="family" mode="not_eq"><string>monospace</
-string></test>
+        <test qual="all" name="family" compare="not_eq"><string>sans-ser
+if</string></test>
+        <test qual="all" name="family" compare="not_eq"><string>serif</s
+tring></test>
+        <test qual="all" name="family" compare="not_eq"><string>monospac
+e</string></test>
         <edit name="family" mode="append_last"><string>sans-serif</strin
 g></edit>
 </match>
@@ -683,7 +720,7 @@ e>
         add 'monospace' as the alternative
 -->
 <match target="pattern">
-        <test name="family" mode="eq">
+        <test name="family" compare="eq">
                 <string>Courier New</string>
         </test>
         <edit name="family" mode="prepend">
@@ -691,7 +728,7 @@ e>
         </edit>
 </match>
 <match target="pattern">
-        <test name="family" mode="eq">
+        <test name="family" compare="eq">
                 <string>Courier</string>
         </test>
         <edit name="family" mode="prepend">
@@ -706,7 +743,7 @@ User configuration file
    This is an example of a per-user configuration file that lives
    in $XDG_CONFIG_HOME/fontconfig/fonts.conf
 <?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
 <!-- $XDG_CONFIG_HOME/fontconfig/fonts.conf for per-user font configurat
 ion -->
 <fontconfig>
@@ -809,6 +846,8 @@ Environment variables
    FONTCONFIG_PATH is used to override the default configuration
    directory.
 
+   FONTCONFIG_SYSROOT is used to set a default sysroot directory.
+
    FC_DEBUG is used to output the detailed debugging messages. see
    Debugging Applications section for more details.
 
@@ -828,10 +867,20 @@ Environment variables
    environment variable will causes skipping this check and
    enforce to use or not use mmap(2) anyway.
 
+   SOURCE_DATE_EPOCH is used to ensure fc-cache(1) generates files
+   in a deterministic manner in order to support reproducible
+   builds. When set to a numeric representation of UNIX timestamp,
+   fontconfig will prefer this value over using the modification
+   timestamps of the input files in order to identify which cache
+   files require regeneration. If SOURCE_DATE_EPOCH is not set (or
+   is newer than the mtime of the directory), the existing
+   behaviour is unchanged.
+
 See Also
 
-   fc-cat(1), fc-cache(1), fc-list(1), fc-match(1), fc-query(1)
+   fc-cat(1), fc-cache(1), fc-list(1), fc-match(1), fc-query(1),
+   SOURCE_DATE_EPOCH.
 
 Version
 
-   Fontconfig version 2.12.6
+   Fontconfig version 2.14.2

@@ -39,6 +39,7 @@ static const struct {
     { FC_EMBEDDED_BITMAP_OBJECT,   FcTrue 	},  /* !FC_LOAD_NO_BITMAP */
     { FC_DECORATIVE_OBJECT,	   FcFalse	},
     { FC_SYMBOL_OBJECT,		   FcFalse	},
+    { FC_VARIABLE_OBJECT,	   FcFalse	},
 };
 
 #define NUM_FC_BOOL_DEFAULTS	(int) (sizeof FcBoolDefaults / sizeof FcBoolDefaults[0])
@@ -61,7 +62,17 @@ retry:
 	if (!langs || !langs[0])
 	    langs = getenv ("LC_ALL");
 	if (!langs || !langs[0])
-	    langs = getenv ("LC_CTYPE");
+        {
+            langs = getenv ("LC_CTYPE");
+            // On some macOS systems, LC_CTYPE is set to "UTF-8", which doesn't
+            // give any languge information. In this case, ignore LC_CTYPE and
+            // continue the search with LANG.
+            if (langs && (FcStrCmpIgnoreCase((const FcChar8 *) langs,
+                                             (const FcChar8 *)"UTF-8") == 0))
+            {
+                langs = NULL;
+            }
+        }
 	if (!langs || !langs[0])
 	    langs = getenv ("LANG");
 	if (langs && langs[0])
@@ -210,58 +221,111 @@ retry:
     return prgname;
 }
 
+static FcChar8 *default_desktop_name;
+
+FcChar8 *
+FcGetDesktopName (void)
+{
+    FcChar8 *desktop_name;
+retry:
+    desktop_name = fc_atomic_ptr_get (&default_desktop_name);
+    if (!desktop_name)
+    {
+	char *s = getenv ("XDG_CURRENT_DESKTOP");
+
+	if (!s)
+	    desktop_name = FcStrdup ("");
+	else
+	    desktop_name = FcStrdup (s);
+	if (!desktop_name)
+	{
+	    fprintf (stderr, "Fontconfig error: out of memory in %s\n",
+		     __FUNCTION__);
+	    return NULL;
+	}
+
+	if (!fc_atomic_ptr_cmpexch(&default_desktop_name, NULL, desktop_name))
+	{
+	    free (desktop_name);
+	    goto retry;
+	}
+    }
+    if (desktop_name && !desktop_name[0])
+	return NULL;
+
+    return desktop_name;
+}
+
 void
 FcDefaultFini (void)
 {
     FcChar8  *lang;
     FcStrSet *langs;
     FcChar8  *prgname;
+    FcChar8  *desktop;
 
     lang = fc_atomic_ptr_get (&default_lang);
-    if (lang && fc_atomic_ptr_cmpexch (&default_lang, lang, NULL)) {
+    if (lang && fc_atomic_ptr_cmpexch (&default_lang, lang, NULL))
+    {
 	free (lang);
     }
 
     langs = fc_atomic_ptr_get (&default_langs);
-    if (langs && fc_atomic_ptr_cmpexch (&default_langs, langs, NULL)) {
+    if (langs && fc_atomic_ptr_cmpexch (&default_langs, langs, NULL))
+    {
 	FcRefInit (&langs->ref, 1);
 	FcStrSetDestroy (langs);
     }
 
     prgname = fc_atomic_ptr_get (&default_prgname);
-    if (prgname && fc_atomic_ptr_cmpexch (&default_prgname, prgname, NULL)) {
+    if (prgname && fc_atomic_ptr_cmpexch (&default_prgname, prgname, NULL))
+    {
 	free (prgname);
+    }
+
+    desktop = fc_atomic_ptr_get (&default_desktop_name);
+    if (desktop && fc_atomic_ptr_cmpexch(&default_desktop_name, desktop, NULL))
+    {
+	free (desktop);
     }
 }
 
 void
 FcDefaultSubstitute (FcPattern *pattern)
 {
+    FcPatternIter iter;
     FcValue v, namelang, v2;
     int	    i;
     double	dpi, size, scale, pixelsize;
 
-    if (FcPatternObjectGet (pattern, FC_WEIGHT_OBJECT, 0, &v) == FcResultNoMatch )
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_WEIGHT_OBJECT))
 	FcPatternObjectAddInteger (pattern, FC_WEIGHT_OBJECT, FC_WEIGHT_NORMAL);
 
-    if (FcPatternObjectGet (pattern, FC_SLANT_OBJECT, 0, &v) == FcResultNoMatch)
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_SLANT_OBJECT))
 	FcPatternObjectAddInteger (pattern, FC_SLANT_OBJECT, FC_SLANT_ROMAN);
 
-    if (FcPatternObjectGet (pattern, FC_WIDTH_OBJECT, 0, &v) == FcResultNoMatch)
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_WIDTH_OBJECT))
 	FcPatternObjectAddInteger (pattern, FC_WIDTH_OBJECT, FC_WIDTH_NORMAL);
 
     for (i = 0; i < NUM_FC_BOOL_DEFAULTS; i++)
-	if (FcPatternObjectGet (pattern, FcBoolDefaults[i].field, 0, &v) == FcResultNoMatch)
+	if (!FcPatternFindObjectIter (pattern, &iter, FcBoolDefaults[i].field))
 	    FcPatternObjectAddBool (pattern, FcBoolDefaults[i].field, FcBoolDefaults[i].value);
 
     if (FcPatternObjectGetDouble (pattern, FC_SIZE_OBJECT, 0, &size) != FcResultMatch)
-	size = 12.0L;
+    {
+	FcRange *r;
+	double b, e;
+	if (FcPatternObjectGetRange (pattern, FC_SIZE_OBJECT, 0, &r) == FcResultMatch && FcRangeGetDouble (r, &b, &e))
+	    size = (b + e) * .5;
+	else
+	    size = 12.0L;
+    }
     if (FcPatternObjectGetDouble (pattern, FC_SCALE_OBJECT, 0, &scale) != FcResultMatch)
 	scale = 1.0;
     if (FcPatternObjectGetDouble (pattern, FC_DPI_OBJECT, 0, &dpi) != FcResultMatch)
 	dpi = 75.0;
 
-    if (FcPatternObjectGet (pattern, FC_PIXEL_SIZE_OBJECT, 0, &v) != FcResultMatch)
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_PIXEL_SIZE_OBJECT))
     {
 	(void) FcPatternObjectDel (pattern, FC_SCALE_OBJECT);
 	FcPatternObjectAddDouble (pattern, FC_SCALE_OBJECT, scale);
@@ -273,25 +337,22 @@ FcDefaultSubstitute (FcPattern *pattern)
     }
     else
     {
+	FcPatternIterGetValue(pattern, &iter, 0, &v, NULL);
 	size = v.u.d;
 	size = size / dpi * 72.0 / scale;
     }
     (void) FcPatternObjectDel (pattern, FC_SIZE_OBJECT);
     FcPatternObjectAddDouble (pattern, FC_SIZE_OBJECT, size);
 
-    if (FcPatternObjectGet (pattern, FC_FONTVERSION_OBJECT, 0, &v) == FcResultNoMatch)
-    {
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_FONTVERSION_OBJECT))
 	FcPatternObjectAddInteger (pattern, FC_FONTVERSION_OBJECT, 0x7fffffff);
-    }
 
-    if (FcPatternObjectGet (pattern, FC_HINT_STYLE_OBJECT, 0, &v) == FcResultNoMatch)
-    {
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_HINT_STYLE_OBJECT))
 	FcPatternObjectAddInteger (pattern, FC_HINT_STYLE_OBJECT, FC_HINT_FULL);
-    }
-    if (FcPatternObjectGet (pattern, FC_NAMELANG_OBJECT, 0, &v) == FcResultNoMatch)
-    {
+
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_NAMELANG_OBJECT))
 	FcPatternObjectAddString (pattern, FC_NAMELANG_OBJECT, FcGetDefaultLang ());
-    }
+
     /* shouldn't be failed. */
     FcPatternObjectGet (pattern, FC_NAMELANG_OBJECT, 0, &namelang);
     /* Add a fallback to ensure the english name when the requested language
@@ -307,17 +368,17 @@ FcDefaultSubstitute (FcPattern *pattern)
      */
     v2.type = FcTypeString;
     v2.u.s = (FcChar8 *) "en-us";
-    if (FcPatternObjectGet (pattern, FC_FAMILYLANG_OBJECT, 0, &v) == FcResultNoMatch)
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_FAMILYLANG_OBJECT))
     {
 	FcPatternObjectAdd (pattern, FC_FAMILYLANG_OBJECT, namelang, FcTrue);
 	FcPatternObjectAddWithBinding (pattern, FC_FAMILYLANG_OBJECT, v2, FcValueBindingWeak, FcTrue);
     }
-    if (FcPatternObjectGet (pattern, FC_STYLELANG_OBJECT, 0, &v) == FcResultNoMatch)
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_STYLELANG_OBJECT))
     {
 	FcPatternObjectAdd (pattern, FC_STYLELANG_OBJECT, namelang, FcTrue);
 	FcPatternObjectAddWithBinding (pattern, FC_STYLELANG_OBJECT, v2, FcValueBindingWeak, FcTrue);
     }
-    if (FcPatternObjectGet (pattern, FC_FULLNAMELANG_OBJECT, 0, &v) == FcResultNoMatch)
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_FULLNAMELANG_OBJECT))
     {
 	FcPatternObjectAdd (pattern, FC_FULLNAMELANG_OBJECT, namelang, FcTrue);
 	FcPatternObjectAddWithBinding (pattern, FC_FULLNAMELANG_OBJECT, v2, FcValueBindingWeak, FcTrue);
@@ -329,6 +390,16 @@ FcDefaultSubstitute (FcPattern *pattern)
 	if (prgname)
 	    FcPatternObjectAddString (pattern, FC_PRGNAME_OBJECT, prgname);
     }
+
+    if (FcPatternObjectGet (pattern, FC_DESKTOP_NAME_OBJECT, 0, &v) == FcResultNoMatch)
+    {
+	FcChar8 *desktop = FcGetDesktopName ();
+	if (desktop)
+	    FcPatternObjectAddString (pattern, FC_DESKTOP_NAME_OBJECT, desktop);
+    }
+
+    if (!FcPatternFindObjectIter (pattern, &iter, FC_ORDER_OBJECT))
+	FcPatternObjectAddInteger (pattern, FC_ORDER_OBJECT, 0);
 }
 #define __fcdefault__
 #include "fcaliastail.h"

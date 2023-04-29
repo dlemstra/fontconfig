@@ -10,7 +10,7 @@ REL="HOME"
 HREF="t1.html"><LINK
 REL="UP"
 TITLE="FcConfig"
-HREF="x102.html#AEN2752"><LINK
+HREF="x103.html#AEN3038"><LINK
 REL="PREVIOUS"
 TITLE="FcConfigParseAndLoadFromMemory"
 HREF="fcconfigparseandloadfrommemory.html"><LINK
@@ -75,7 +75,7 @@ NAME="FCCONFIGGETSYSROOT"
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
-NAME="AEN3439"
+NAME="AEN3750"
 ></A
 ><H2
 >Name</H2
@@ -83,7 +83,7 @@ NAME="AEN3439"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN3442"
+NAME="AEN3753"
 ></A
 ><H2
 >Synopsis</H2
@@ -92,7 +92,7 @@ CLASS="FUNCSYNOPSIS"
 ><P
 ></P
 ><A
-NAME="AEN3443"
+NAME="AEN3754"
 ></A
 ><TABLE
 BORDER="0"
@@ -103,7 +103,7 @@ WIDTH="100%"
 ><PRE
 CLASS="FUNCSYNOPSISINFO"
 >#include &#60;fontconfig/fontconfig.h&#62;
-	</PRE
+        </PRE
 ></TD
 ></TR
 ></TABLE
@@ -129,18 +129,31 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN3450"
+NAME="AEN3761"
 ></A
 ><H2
 >Description</H2
 ><P
->Obtrains the system root directory in 'config' if available.
-	    </P
+>Obtains the system root directory in 'config' if available. All files
+(including file properties in patterns) obtained from this 'config' are
+relative to this system root directory.
+    </P
+><P
+>This function isn't MT-safe. <TT
+CLASS="FUNCTION"
+>FcConfigReference</TT
+> must be called
+before using this and then <TT
+CLASS="FUNCTION"
+>FcConfigDestroy</TT
+> when
+the return value is no longer referenced.
+            </P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN3453"
+NAME="AEN3767"
 ></A
 ><H2
 >Since</H2
@@ -197,7 +210,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="x102.html#AEN2752"
+HREF="x103.html#AEN3038"
 ACCESSKEY="U"
 >Up</A
 ></TD

@@ -56,7 +56,8 @@ FcRangeCreateInteger (FcChar32 begin, FcChar32 end)
 void
 FcRangeDestroy (FcRange *range)
 {
-    free (range);
+    if (range)
+	free (range);
 }
 
 FcRange *
@@ -96,9 +97,6 @@ FcRangePromote (double v, FcValuePromotionBuffer *vbuf)
 FcBool
 FcRangeIsInRange (const FcRange *a, const FcRange *b)
 {
-    if (!a || !b)
-	return FcFalse;
-
     return a->begin >= b->begin && a->end <= b->end;
 }
 
@@ -107,20 +105,22 @@ FcRangeCompare (FcOp op, const FcRange *a, const FcRange *b)
 {
     switch ((int) op) {
     case FcOpEqual:
+	return a->begin == b->begin && a->end == b->end;
     case FcOpContains:
     case FcOpListing:
 	return FcRangeIsInRange (a, b);
     case FcOpNotEqual:
+	return a->begin != b->begin || a->end != b->end;
     case FcOpNotContains:
 	return !FcRangeIsInRange (a, b);
     case FcOpLess:
-	return a->begin < b->begin;
+	return a->end < b->begin;
     case FcOpLessEqual:
-	return a->begin <= b->begin;
+	return a->end <= b->begin;
     case FcOpMore:
-	return a->end > b->end;
+	return a->begin > b->end;
     case FcOpMoreEqual:
-	return a->end >= b->end;
+	return a->begin >= b->end;
     default:
 	break;
     }

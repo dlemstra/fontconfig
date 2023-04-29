@@ -22,7 +22,9 @@
  */
 #include "fcint.h"
 #include "fcarch.h"
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
+#endif
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -218,6 +220,14 @@ FcScandir (const char		*dirp,
 	    size_t dentlen = FcPtrToOffset (dent, dent->d_name) + strlen (dent->d_name) + 1;
 	    dentlen = ((dentlen + ALIGNOF_VOID_P - 1) & ~(ALIGNOF_VOID_P - 1));
 	    p = (struct dirent *) malloc (dentlen);
+	    if (!p)
+	    {
+		free_dirent (dlist);
+		closedir (d);
+		errno = ENOMEM;
+
+		return -1;
+	    }
 	    memcpy (p, dent, dentlen);
 	    if ((n + 1) >= lsize)
 	    {
@@ -225,6 +235,7 @@ FcScandir (const char		*dirp,
 		dlp = (struct dirent **) realloc (dlist, sizeof (struct dirent *) * lsize);
 		if (!dlp)
 		{
+		    free (p);
 		    free_dirent (dlist);
 		    closedir (d);
 		    errno = ENOMEM;
@@ -375,7 +386,7 @@ FcFStatFs (int fd, FcStatFS *statb)
 #  endif
 #  if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME)
 	p = buf.f_fstypename;
-#  elif defined(__linux__)
+#  elif defined(__linux__) || defined (__EMSCRIPTEN__)
 	switch (buf.f_type)
 	{
 	case 0x6969: /* nfs */
