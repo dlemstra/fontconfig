@@ -829,7 +829,6 @@ doc/Makefile
 doc/version.sgml
 its/Makefile
 po/Makefile.in
-po-conf/Makefile.in
 test/Makefile
 fontconfig.pc
 fontconfig-zip
