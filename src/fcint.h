@@ -328,8 +328,6 @@ typedef struct _FcEdit {
     FcValueBinding  binding;
 } FcEdit;
 
-typedef void (* FcDestroyFunc) (void *data);
-
 typedef struct _FcPtrList	FcPtrList;
 /* need to sync with FcConfigFileInfoIter at fontconfig.h */
 typedef struct _FcPtrListIter {
@@ -408,8 +406,8 @@ typedef struct _FcStrBuf {
 
 typedef struct _FcHashTable	FcHashTable;
 
-typedef FcChar32 (* FcHashFunc)	   (const void *data);
-typedef int	 (* FcCompareFunc) (const void *v1, const void *v2);
+typedef FcChar32 (* FcHashFunc)	   (const FcChar8 *data);
+typedef int	 (* FcCompareFunc) (const FcChar8 *v1, const FcChar8 *v2);
 typedef FcBool	 (* FcCopyFunc)	   (const void *src, void **dest);
 
 
@@ -524,7 +522,6 @@ struct _FcConfig {
      * and those directives may occur in any order
      */
     FcStrSet	*configDirs;	    /* directories to scan for fonts */
-    FcStrSet	*configMapDirs;	    /* mapped names to generate cache entries */
     /*
      * List of directories containing fonts,
      * built by recursively scanning the set
@@ -581,6 +578,10 @@ struct _FcConfig {
     FcChar8     *sysRoot;	    /* override the system root directory */
     FcStrSet	*availConfigFiles;  /* config files available */
     FcPtrList	*rulesetList;	    /* List of rulesets being installed */
+
+    FcFilterFontSetFunc filter_func;       /* A predicate function to filter out config->fonts */
+    FcDestroyFunc       destroy_data_func; /* A callback function to destroy config->filter_data */
+    void                *filter_data;      /* An user data to be used for filter_func */
 };
 
 typedef struct _FcFileTime {
@@ -733,10 +734,6 @@ FcConfigPatternsAdd (FcConfig	*config,
 		     FcPattern	*pattern,
 		     FcBool	accept);
 
-FcPrivate FcBool
-FcConfigAcceptFont (FcConfig	    *config,
-		    const FcPattern *font);
-
 FcPrivate FcFileTime
 FcConfigModifiedTime (FcConfig *config);
 
@@ -801,6 +798,12 @@ FcCharSetPromote (FcValuePromotionBuffer *vbuf);
 
 FcPrivate void
 FcLangCharSetPopulate (void);
+
+FcPrivate FcBool
+FcLangIsExclusive (const FcChar8  *lang);
+
+FcPrivate const FcChar8*
+FcLangIsExclusiveFromOs2 (unsigned long os2ulUnicodeRange1, unsigned long os2ulUnicodeRange2);
 
 FcPrivate FcCharSetFreezer *
 FcCharSetFreezerCreate (void);

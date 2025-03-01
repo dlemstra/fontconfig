@@ -94,7 +94,7 @@ FcComparePostScript (const FcValue *v1, const FcValue *v2, FcValue *bestValue)
 	*v1_string != ' ' && *v2_string != ' ')
 	return 1.0;
 
-    n = FcStrMatchIgnoreCaseAndDelims (v1_string, v2_string, (const FcChar8 *)" -");
+    n = FcStrMatchIgnoreCaseAndDelims (v1_string, v2_string, (const FcChar8 *)" -,");
     len1 = strlen ((const char *)v1_string);
     len2 = strlen ((const char *)v2_string);
     mlen = FC_MAX (len1, len2);
@@ -322,8 +322,10 @@ typedef enum _FcMatcherPriorityDummy {
 
 typedef enum _FcMatcherPriority {
     PRI1(FILE),
+    PRI1(FONT_WRAPPER),
     PRI1(FONTFORMAT),
     PRI1(VARIABLE),
+    PRI1(NAMED_INSTANCE),
     PRI1(SCALABLE),
     PRI1(COLOR),
     PRI1(FOUNDRY),
@@ -1243,7 +1245,7 @@ FcFontSetSort (FcConfig	    *config FC_UNUSED,
 	 FcPatternGet (p, FC_LANG, nPatternLang, &patternLang) == FcResultMatch;
 	 nPatternLang++)
 	;
-	
+
     /* freed below */
     nodes = malloc (nnodes * sizeof (FcSortNode) +
 		    nnodes * sizeof (FcSortNode *) +
@@ -1309,7 +1311,7 @@ FcFontSetSort (FcConfig	    *config FC_UNUSED,
 	    for (i = 0; i < nPatternLang; i++)
 	    {
 		FcValue	    nodeLang;
-		
+
 		if (!patternLangSat[i] &&
 		    FcPatternGet (p, FC_LANG, i, &patternLang) == FcResultMatch &&
 		    FcPatternGet (nodeps[f]->pattern, FC_LANG, 0, &nodeLang) == FcResultMatch)
