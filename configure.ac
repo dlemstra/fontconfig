@@ -23,7 +23,7 @@ dnl  PERFORMANCE OF THIS SOFTWARE.
 dnl
 dnl Process this file with autoconf to create configure.
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.71])
 
 dnl ==========================================================================
 dnl                               Versioning
@@ -33,7 +33,7 @@ dnl This is the package version number, not the shared library
 dnl version.  This same version number must appear in fontconfig/fontconfig.h
 dnl Yes, it is a pain to synchronize version numbers.  Unfortunately, it's
 dnl not possible to extract the version number here from fontconfig.h
-AC_INIT([fontconfig],[2.16.0],[https://gitlab.freedesktop.org/fontconfig/fontconfig/issues/new])
+AC_INIT([fontconfig],[2.16.2],[https://gitlab.freedesktop.org/fontconfig/fontconfig/issues/new])
 AM_INIT_AUTOMAKE([1.11 parallel-tests dist-xz foreign])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
@@ -163,6 +163,7 @@ dnl ==========================================================================
 AC_HEADER_DIRENT
 # Autoupdate added the next two lines to ensure that your configure
 # script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
 AC_PROG_EGREP
 
 AC_CHECK_HEADERS([dirent.h fcntl.h stdlib.h string.h unistd.h sys/statvfs.h sys/vfs.h sys/statfs.h sys/param.h sys/mount.h])
@@ -829,6 +830,7 @@ doc/Makefile
 doc/version.sgml
 its/Makefile
 po/Makefile.in
+po-conf/Makefile.in
 test/Makefile
 fontconfig.pc
 fontconfig-zip
